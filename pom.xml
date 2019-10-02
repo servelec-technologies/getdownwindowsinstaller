@@ -1,17 +1,12 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <!--FILLMEIN - REQUIRED-->
     <artifactId>getdown-windows-installer</artifactId>
 
 
-    <!--FILLMEIN - REQUIRED-->
-    <name>Updatable App</name>
-    <!--FILLMEIN - REQUIRED-->
-    <description>Example POM that builds update directory and a native installer for Windows</description>
-    <!--FILLMEIN - REQUIRED-->
+    <name>GetDown</name>
+    <description>Allow getdown applications to be launched from a URL</description>
     <groupId>tech.ugma.education.getdown</groupId>
-    <!--FILLMEIN - REQUIRED-->
     <version>0.0.1-SNAPSHOT</version>
 
     <properties>
@@ -23,56 +18,6 @@
     <build>
 
         <plugins>
-            <!-- Creates the getdown (updates goal) and getdown-stub (stub goal) directory. -->
-            <!-- The contents of the getdown directory need to go to your server (whatever is in the
-            appbase tag) so that getdown can go get it and perform an update with it.-->
-            <!--The contents of the getdown-stub directory get used for the NSIS installer.-->
-            <plugin>
-                <groupId>org.icestuff</groupId>
-                <artifactId>getdown-maven-plugin</artifactId>
-                <version>0.0.3-SNAPSHOT</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>updates</goal>
-                            <goal>stub</goal>
-                            <goal>applet</goal>
-                        </goals>
-                        <configuration>
-                            <!--FILLMEIN - REQUIRED-->
-                            <appbase>http://www.myserver.com/myapp/getdown/</appbase>
-                            <libPath>lib</libPath>
-                            <!--FILLMEIN - REQUIRED-->
-                            <mainClass>tech.ugma.education.getdown.examples.MyApp</mainClass>
-                            <outputJarVersions>false</outputJarVersions>
-                            <verbose>true</verbose>
-                            <!--OPTIONAL-->
-                            <!--<appargs>-->
-                            <!--<apparg>Some Argument</apparg>-->
-                            <!--</appargs>-->
-                            <ui>
-                                <!--FILLMEIN - REQUIRED-->
-                                <name>My App</name>
-
-                                <!--OPTIONAL CONFIGURATION:-->
-                                <!--<icons>-->
-                                    <!--<icon>${basedir}/src/main/resources/images/myapp.png</icon>-->
-                                <!--</icons>-->
-                                <!--<progressImage>${basedir}/src/main/resources/images/progress.png</progressImage>-->
-                                <!--<backgroundImage>${basedir}/src/main/resources/images/splash.png</backgroundImage>-->
-                                <!--<progress>80, 244, 196, 11</progress>-->
-                                <!--<progressText>FFFFFF</progressText>-->
-                                <!--<statusText>FFFFFF</statusText>-->
-                                <!--<status>20, 170, 316, 64</status>-->
-                                <!--<textShadow>111111</textShadow>-->
-                            </ui>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-
 
             <!-- NSIS (Nullsoft Scriptable Install System) Installer Generation -->
             <!-- * Download and install NSIS. -->
@@ -96,7 +41,7 @@
                         </goals>
                         <configuration>
                             <!--Default Value: C:/Program Files/NSIS/makensis.exe-->
-                            <!--<makensisBin>C:/Program Files (x86)/NSIS/makensis.exe</makensisBin>-->
+                            <makensisBin>C:/Program Files (x86)/NSIS/makensis.exe</makensisBin>
                             <!--The name of the installer-->
                             <outputFile>${project.name}-installer.exe</outputFile>
                             <!--Configures the NSIS installer. See NSIS documentation.-->

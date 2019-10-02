@@ -1,4 +1,3 @@
-;MyApp
 
 ;--------------------------------
 ;Include Modern UI
@@ -12,98 +11,63 @@
   ;Name and file
   Name "${PROJECT_NAME}"
   
-  ; Handled by plugin
-  ;OutFile "${PROJECT_BUILD_DIR}\Setup${PROJECT_NAME}.exe"
-
   ;Default installation folder
-  InstallDir "$LOCALAPPDATA\${PROJECT_NAME}"
+  InstallDir "$PROGRAMFILES64\${PROJECT_NAME}"
   
   ;Get installation folder from registry if available
   InstallDirRegKey HKCU "Software\${PROJECT_NAME}" ""
 
   ;Request application privileges for Windows Vista
-  RequestExecutionLevel user
+  RequestExecutionLevel admin
 
 
-;--------------------------------
-;Variables
-
-  Var StartMenuFolder
-;--------------------------------
-;Interface Settings
+  ;--------------------------------
+  ;Interface Settings
 
   !define MUI_ABORTWARNING
   !define MUI_HEADERIMAGE
   !define MUI_HEADERIMAGE_BITMAP "myappbanner.bmp"
 
-;--------------------------------
-;Pages
-
+  ;--------------------------------
+  ;Pages
   !insertmacro MUI_PAGE_WELCOME
   !define MUI_PAGE_CUSTOMFUNCTION_SHOW licpageshow
   !insertmacro MUI_PAGE_LICENSE "License.txt"
   !insertmacro MUI_PAGE_COMPONENTS
   !insertmacro MUI_PAGE_DIRECTORY
 
-;Start Menu Folder Page Configuration
-  !define MUI_STARTMENUPAGE_REGISTRY_ROOT "HKCU" 
-  !define MUI_STARTMENUPAGE_REGISTRY_KEY "Software\${PROJECT_NAME}"
-  !define MUI_STARTMENUPAGE_REGISTRY_VALUENAME "${PROJECT_NAME}"
-  
-  !insertmacro MUI_PAGE_STARTMENU Application $StartMenuFolder
-
   !insertmacro MUI_PAGE_INSTFILES
   !define MUI_FINISHPAGE_NOAUTOCLOSE
-  !define MUI_FINISHPAGE_RUN
-  !define MUI_FINISHPAGE_RUN_NOTCHECKED
-  !define MUI_FINISHPAGE_RUN_TEXT "Start ${PROJECT_NAME} Now"
-  !define MUI_FINISHPAGE_RUN_FUNCTION "LaunchLink"
-  !define MUI_FINISHPAGE_SHOWREADME_NOTCHECKED
-  !define MUI_FINISHPAGE_SHOWREADME $INSTDIR\readme.txt
   !insertmacro MUI_PAGE_FINISH
-  
+
   !insertmacro MUI_UNPAGE_CONFIRM
   !insertmacro MUI_UNPAGE_INSTFILES
   !insertmacro MUI_UNPAGE_FINISH
-  
-;--------------------------------
-;Languages
- 
+
+
+  ;--------------------------------
+  ;Languages
   !insertmacro MUI_LANGUAGE "English"
 
-;--------------------------------
-;Installer Sections
-
+  ;--------------------------------
+  ;Installer Sections
 Section "${PROJECT_NAME}" MyApp
-
   SetOutPath "$INSTDIR"
-  
-  ;ADD YOUR OWN FILES HERE...
-  File /r ..\..\..\target\getdown-stub\*.*
-  File myapp.ico
-  File myappsmall.ico
-  File myappbanner.bmp
-  File Readme.txt
-  
-  ;Store installation folder
+  File getdown.jar
+
+  Call GetJRE
+  Pop $R0
+     
   WriteRegStr HKCU "Software\${PROJECT_NAME}" "" $INSTDIR
-  
+  WriteRegStr HKCR "getdown" "URL Protocol" ""
+  WriteRegStr HKCR "getdown\shell\open\command" "" '"$R0" -jar  "$INSTDIR\getdown.jar" "%1"'
+
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GetDown" "DisplayName" "Get Down"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GetDown" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+
+
   ;Create uninstaller
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-
-  ;Create shortcuts
-
-  ;Start Menu Shortcut
-  CreateDirectory "$SMPROGRAMS\$StartMenuFolder"
-  CreateShortCut "$SMPROGRAMS\$StartMenuFolder\${PROJECT_NAME}.lnk" "$INSTDIR\getdown.jar" \
-	"." \
-	$INSTDIR\myapp.ico 0 SW_SHOWNORMAL ALT|CONTROL|SHIFT|U "${PROJECT_NAME}"
-  CreateShortCut "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk" "$INSTDIR\Uninstall.exe"
-
-  ;Desktop Shortcut
-  CreateShortCut "$DESKTOP\${PROJECT_NAME}.lnk" "$INSTDIR\getdown.jar" \
-	"." \
-	$INSTDIR\myapp.ico 0 SW_SHOWNORMAL ALT|CONTROL|SHIFT|U "${PROJECT_NAME}"
 SectionEnd
 
 ;--------------------------------
@@ -114,30 +78,22 @@ SectionEnd
 
   ;Assign language strings to sections
   !insertmacro MUI_FUNCTION_DESCRIPTION_BEGIN
-    !insertmacro MUI_DESCRIPTION_TEXT ${MyApp} $(DESC_MyApp)
+  !insertmacro MUI_DESCRIPTION_TEXT ${MyApp} $(DESC_MyApp)
   !insertmacro MUI_FUNCTION_DESCRIPTION_END
 
 ;--------------------------------
 ;Uninstaller Section
 
 Section "Uninstall"
+   Delete "$INSTDIR\Uninstall.exe" ; delete self
+   Delete "$INSTDIR\*"
 
-  ;ADD YOUR OWN FILES HERE...
+   RMDir /REBOOTOK "$INSTDIR"
 
-  Delete "$INSTDIR\Uninstall.exe" ; delete self
-  Delete "$INSTDIR\*"
-  RMDir /r "$INSTDIR\lib"
-  RMDir /r "$INSTDIR\assets"
-
-  RMDir /REBOOTOK "$INSTDIR"
-
-  !insertmacro MUI_STARTMENU_GETFOLDER Application $StartMenuFolder
-    
-  Delete "$SMPROGRAMS\$StartMenuFolder\Uninstall.lnk"
-  Delete "$SMPROGRAMS\$StartMenuFolder\${PROJECT_NAME}.lnk"
-  RMDir "$SMPROGRAMS\$StartMenuFolder"
 
   DeleteRegKey /ifempty HKCU "Software\${PROJECT_NAME}"
+  DeleteRegKey HKCR "getdown"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\GetDown"
 
 SectionEnd
 
@@ -148,6 +104,33 @@ Function licpageshow
     SendMessage $0 ${WM_SETFONT} $1 1
 FunctionEnd
 
-Function LaunchLink
-  ExecShell "" "$SMPROGRAMS\$StartMenuFolder\${PROJECT_NAME}.lnk"
+Function GetJRE
+  Push $R0
+  Push $R1
+ 
+  !define JAVAEXE "javaw.exe"
+  ;TODO if 32 bit is still a thing maybe we need to look into supporting that?
+  SetRegView 64
+ 
+  ClearErrors
+  StrCpy $R0 "$EXEDIR\jre\bin\${JAVAEXE}"
+  IfFileExists $R0 JreFound  ;; 1) found it locally
+  StrCpy $R0 ""
+ 
+  ClearErrors
+  ReadEnvStr $R0 "JAVA_HOME"
+  StrCpy $R0 "$R0\bin\${JAVAEXE}"
+  IfErrors 0 JreFound  ;; 2) found it in JAVA_HOME
+ 
+  ClearErrors
+  ReadRegStr $R1 HKLM "SOFTWARE\JavaSoft\Java Runtime Environment" "CurrentVersion"
+  ReadRegStr $R0 HKLM "SOFTWARE\JavaSoft\Java Runtime Environment\$R1" "JavaHome"
+  StrCpy $R0 "$R0\bin\${JAVAEXE}"
+ 
+  IfErrors 0 JreFound  ;; 3) found it in the registry
+  StrCpy $R0 "${JAVAEXE}"  ;; 4) wishing you good luck
+ 
+ JreFound:
+  Pop $R1
+  Exch $R0
 FunctionEnd
